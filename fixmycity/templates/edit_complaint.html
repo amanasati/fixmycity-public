@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Edit Complaint{% endblock %}
+{% block page_title %}Edit Complaint{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-title">Edit Complaint</div>
+  <form method="post" style="max-width: 600px;">
+    <div style="margin-bottom: 16px;">
+      <label for="type" style="display: block; font-weight: 600; margin-bottom: 4px;">Type</label>
+      <select id="type" name="type" required style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface);">
+        <option value="Pothole" {% if complaint.type == 'Pothole' %}selected{% endif %}>Pothole</option>
+        <option value="Broken Light" {% if complaint.type == 'Broken Light' %}selected{% endif %}>Broken Light</option>
+        <option value="Garbage Overflow" {% if complaint.type == 'Garbage Overflow' %}selected{% endif %}>Garbage Overflow</option>
+        <option value="Electric Fault" {% if complaint.type == 'Electric Fault' %}selected{% endif %}>Electric Fault</option>
+      </select>
+    </div>
+    <div style="margin-bottom: 16px;">
+      <label for="city" style="display: block; font-weight: 600; margin-bottom: 4px;">City</label>
+      <input type="text" id="city" name="city" value="{{ complaint.location }}" required style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface);">
+    </div>
+    <div style="margin-bottom: 16px;">
+      <label for="description" style="display: block; font-weight: 600; margin-bottom: 4px;">Description</label>
+      <textarea id="description" name="description" rows="4" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); resize: vertical;">{{ complaint.get('description', '') }}</textarea>
+    </div>
+    <div style="margin-bottom: 16px;">
+      <label for="status" style="display: block; font-weight: 600; margin-bottom: 4px;">Status</label>
+      <select id="status" name="status" required style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface);">
+        <option value="Pending" {% if complaint.status == 'Pending' %}selected{% endif %}>Pending</option>
+        <option value="In Progress" {% if complaint.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+        <option value="Resolved" {% if complaint.status == 'Resolved' %}selected{% endif %}>Resolved</option>
+      </select>
+    </div>
+    <div style="margin-bottom: 16px;">
+      <label for="priority" style="display: block; font-weight: 600; margin-bottom: 4px;">Priority</label>
+      <select id="priority" name="priority" required style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface);">
+        <option value="Low" {% if complaint.priority == 'Low' %}selected{% endif %}>Low</option>
+        <option value="Medium" {% if complaint.priority == 'Medium' %}selected{% endif %}>Medium</option>
+        <option value="High" {% if complaint.priority == 'High' %}selected{% endif %}>High</option>
+      </select>
+    </div>
+    <button type="submit" style="padding: 10px 20px; background: var(--brand); color: #fff; border: none; border-radius: 8px; cursor: pointer;">Update Complaint</button>
+    <a href="{{ url_for('complaints') }}" style="margin-left: 10px; color: var(--text-muted);">Cancel</a>
+  </form>
+</div>
+{% endblock %}

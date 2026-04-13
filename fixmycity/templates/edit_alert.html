@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Edit Alert{% endblock %}
+{% block page_title %}Edit Alert{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-title">Edit Alert</div>
+  <form method="post" style="max-width: 600px;">
+    <div style="margin-bottom: 16px;">
+      <label for="title" style="display: block; font-weight: 600; margin-bottom: 4px;">Title</label>
+      <input type="text" id="title" name="title" value="{{ alert.title }}" required style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface);">
+    </div>
+    <div style="margin-bottom: 16px;">
+      <label for="desc" style="display: block; font-weight: 600; margin-bottom: 4px;">Description</label>
+      <textarea id="desc" name="desc" required style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); min-height: 80px;">{{ alert.desc }}</textarea>
+    </div>
+    <div style="margin-bottom: 16px;">
+      <label for="level" style="display: block; font-weight: 600; margin-bottom: 4px;">Level</label>
+      <select id="level" name="level" required style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface);">
+        <option value="info" {% if alert.level == 'info' %}selected{% endif %}>Info</option>
+        <option value="warning" {% if alert.level == 'warning' %}selected{% endif %}>Warning</option>
+        <option value="danger" {% if alert.level == 'danger' %}selected{% endif %}>Danger</option>
+        <option value="success" {% if alert.level == 'success' %}selected{% endif %}>Success</option>
+      </select>
+    </div>
+    <div style="margin-bottom: 16px;">
+      <label for="read" style="display: flex; align-items: center; gap: 8px; font-weight: 600;">
+        <input type="checkbox" id="read" name="read" {% if alert.read %}checked{% endif %}>
+        Mark as Read
+      </label>
+    </div>
+    <button type="submit" style="padding: 10px 20px; background: var(--brand); color: #fff; border: none; border-radius: 8px; cursor: pointer;">Update Alert</button>
+    <a href="{{ url_for('alerts') }}" style="margin-left: 10px; color: var(--text-muted);">Cancel</a>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Add Complaint{% endblock %}
+{% block page_title %}Add New Complaint{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-title">Add New Complaint</div>
+  <form action="/add" method="POST" enctype="multipart/form-data" style="max-width: 600px;">
+    <div style="margin-bottom: 16px;">
+      <label for="type" style="display: block; font-weight: 600; margin-bottom: 4px;">Type</label>
+      <select id="type" name="type" required style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface);">
+        <option value="">Select Type</option>
+        <option value="Pothole">Pothole</option>
+        <option value="Broken Light">Broken Light</option>
+        <option value="Garbage Overflow">Garbage Overflow</option>
+        <option value="Electric Fault">Electric Fault</option>
+      </select>
+    </div>
+    <div style="margin-bottom: 16px;">
+      <label for="city" style="display: block; font-weight: 600; margin-bottom: 4px;">City</label>
+      <input type="text" id="city" name="city" required style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface);">
+    </div>
+    <div style="margin-bottom: 16px;">
+      <label for="description" style="display: block; font-weight: 600; margin-bottom: 4px;">Description</label>
+      <textarea id="description" name="description" rows="4" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); resize: vertical;"></textarea>
+    </div>
+    <div style="margin-bottom: 16px;">
+      <label for="priority" style="display: block; font-weight: 600; margin-bottom: 4px;">Priority</label>
+      <select id="priority" name="priority" required style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface);">
+        <option value="Low">Low</option>
+        <option value="Medium">Medium</option>
+        <option value="High">High</option>
+      </select>
+    </div>
+    <div style="margin-bottom: 16px;">
+      <label for="image" style="display: block; font-weight: 600; margin-bottom: 4px;">📷 Upload Image Proof</label>
+      <input type="file" id="image" name="image" accept="image/*" capture="environment"
+        style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); cursor: pointer;">
+      <small style="color: var(--text-muted); margin-top: 4px; display: block;">Take a photo or upload from gallery (optional)</small>
+    </div>
+    <button type="submit" style="padding: 10px 20px; background: var(--brand); color: #fff; border: none; border-radius: 8px; cursor: pointer;">Add Complaint</button>
+    <a href="{{ url_for('complaints') }}" style="margin-left: 10px; color: var(--text-muted);">Cancel</a>
+  </form>
+</div>
+{% endblock %}

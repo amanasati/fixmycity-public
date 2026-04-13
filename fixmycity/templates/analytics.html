@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Analytics{% endblock %}
+{% block page_title %}Analytics{% endblock %}
+
+{% block content %}
+<div class="stat-grid" style="margin-bottom:24px;">
+  <div class="stat-card">
+    <div class="stat-label">Resolution Rate</div>
+    <div class="stat-value">{{ stats.resolution_rate }}%</div>
+    <div class="stat-change neutral">Current rate</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Avg. Days to Resolve</div>
+    <div class="stat-value">{{ stats.avg_days }}</div>
+    <div class="stat-change neutral">Average time</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Active Complaints</div>
+    <div class="stat-value">{{ stats.active_complaints }}</div>
+    <div class="stat-change neutral">Pending issues</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Top Category</div>
+    <div class="stat-value" style="font-size:20px;">{{ stats.top_category }}</div>
+    <div class="stat-change neutral">{{ stats.top_count }} issues</div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
+  <div class="card">
+    <div class="card-title">Issues by Type</div>
+    <canvas id="typeChart" height="200"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-title">Resolution by District</div>
+    <canvas id="districtChart" height="200"></canvas>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:24px;">
+  <div class="card-title">3-Year Issue Trend Comparison</div>
+  <canvas id="lineChart" height="100"></canvas>
+</div>
+
+<div class="card">
+  <div class="card-title">Department Performance</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Region</th><th>Total</th><th>Resolved</th><th>Pending</th><th>Avg. Days</th><th>Performance</th></tr>
+      </thead>
+      <tbody>
+        {% for r in perf %}
+        <tr>
+          <td><strong>{{ r.region }}</strong></td>
+          <td>{{ r.total }}</td>
+          <td>{{ r.resolved }}</td>
+          <td>{{ r.total - r.resolved }}</td>
+          <td>{{ r.avg_days }}</td>
+          <td>
+            {% if r.status == 'Good' %}
+              <span class="status-badge badge-good">Good</span>
+            {% elif r.status == 'Average' %}
+              <span class="status-badge badge-avg">Average</span>
+            {% else %}
+              <span class="status-badge badge-bad">Needs Attention</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Issues by type
+new Chart(document.getElementById('typeChart').getContext('2d'), {
+  type: 'bar',
+  data: {
+    labels: [{% for issue in stats.issue_types %}'{{ issue.type }}',{% endfor %}],
+    datasets: [{
+      data: [{% for issue in stats.issue_types %}{{ issue.count }},{% endfor %}],
+      backgroundColor: ['#f59e0b','#10b981','#1a56ff','#a855f7'],
+      borderRadius: 6
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    plugins: { legend: { display: false } },
+    scales: { x: { beginAtZero: true, grid: { color: '#f0f0f0' } }, y: { grid: { display: false } } }
+  }
+});
+
+// Resolution by district
+new Chart(document.getElementById('districtChart').getContext('2d'), {
+  type: 'bar',
+  data: {
+    labels: [{% for p in perf %}'{{ p.region }}',{% endfor %}],
+    datasets: [
+      { label: 'Resolved', data: [{% for p in perf %}{{ p.resolved }},{% endfor %}], backgroundColor: '#10b981', borderRadius: 4 },
+      { label: 'Pending',  data: [{% for p in perf %}{{ p.total - p.resolved }},{% endfor %}],      backgroundColor: '#ef4444', borderRadius: 4 }
+    ]
+  },
+  options: {
+    plugins: { legend: { position: 'bottom' } },
+    scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, grid: { color: '#f0f0f0' } } }
+  }
+});
+
+// Monthly trend
+fetch('/api/monthly-data?year=2024')
+  .then(r => r.json())
+  .then(data => {
+    new Chart(document.getElementById('lineChart').getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+        datasets: [{
+          data: data,
+          backgroundColor: '#1a56ff',
+          borderRadius: 6
+        }]
+      },
+      options: {
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, grid: { color: '#f0f0f0' } }, x: { grid: { display: false } } }
+      }
+    });
+  });
+</script>
+{% endblock %}

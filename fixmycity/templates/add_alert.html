@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Add Alert{% endblock %}
+{% block page_title %}Add New Alert{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-title">Add New Alert</div>
+  <form method="post" style="max-width: 600px;">
+    <div style="margin-bottom: 16px;">
+      <label for="title" style="display: block; font-weight: 600; margin-bottom: 4px;">Title</label>
+      <input type="text" id="title" name="title" required style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface);">
+    </div>
+    <div style="margin-bottom: 16px;">
+      <label for="desc" style="display: block; font-weight: 600; margin-bottom: 4px;">Description</label>
+      <textarea id="desc" name="desc" required style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); min-height: 80px;"></textarea>
+    </div>
+    <div style="margin-bottom: 16px;">
+      <label for="level" style="display: block; font-weight: 600; margin-bottom: 4px;">Level</label>
+      <select id="level" name="level" required style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface);">
+        <option value="info">Info</option>
+        <option value="warning">Warning</option>
+        <option value="danger">Danger</option>
+        <option value="success">Success</option>
+      </select>
+    </div>
+    <button type="submit" style="padding: 10px 20px; background: var(--brand); color: #fff; border: none; border-radius: 8px; cursor: pointer;">Add Alert</button>
+    <a href="{{ url_for('alerts') }}" style="margin-left: 10px; color: var(--text-muted);">Cancel</a>
+  </form>
+</div>
+{% endblock %}

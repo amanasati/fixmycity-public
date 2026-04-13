@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CityProblem | {% block title %}Dashboard{% endblock %}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    :root {
+      --brand: #1a56ff;
+      --brand-light: #e8eeff;
+      --bg: #f4f6fb;
+      --surface: #ffffff;
+      --border: #e4e8f0;
+      --text: #111827;
+      --text-muted: #6b7280;
+      --green: #10b981;
+      --red: #ef4444;
+      --orange: #f59e0b;
+      --sidebar-w: 240px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { min-height: 100%; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); display: flex; min-height: 100vh; overflow-x: hidden; }
+
+    /* Sidebar */
+    .sidebar {
+      width: var(--sidebar-w); background: var(--surface); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100;
+    }
+    .sidebar-logo { padding: 24px 20px; font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; color: var(--brand); }
+    .sidebar-logo span { color: var(--text); }
+    .nav { flex: 1; padding: 8px 12px; display: flex; flex-direction: column; gap: 4px; }
+    .nav a {
+      display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 10px;
+      text-decoration: none; color: var(--text-muted); font-size: 15px; font-weight: 500;
+      transition: all 0.18s; position: relative;
+    }
+    .nav a:hover { background: var(--bg); color: var(--text); }
+    .nav a.active { background: var(--brand-light); color: var(--brand); font-weight: 600; }
+    .nav a .icon { font-size: 18px; width: 22px; text-align: center; }
+    .badge { background: var(--red); color: #fff; font-size: 10px; font-weight: 700; border-radius: 99px; padding: 2px 6px; margin-left: auto; }
+    .sidebar-bottom { padding: 16px 12px; border-top: 1px solid var(--border); }
+    .logout-btn {
+      display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 10px;
+      color: var(--red); font-size: 14px; font-weight: 500; cursor: pointer; text-decoration: none;
+      transition: background 0.18s;
+    }
+    .logout-btn:hover { background: #fef2f2; }
+
+    /* Main */
+    .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+    .topbar {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 0 32px; height: 64px; display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .topbar h1 { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700; }
+    .avatar {
+      width: 40px; height: 40px; border-radius: 50%; background: var(--brand); color: #fff;
+      font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; overflow: hidden; position: relative;
+    }
+    .avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .avatar-menu {
+      position: absolute; top: 52px; right: 32px; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); padding: 8px; min-width: 200px; display: none; z-index: 200;
+    }
+    .avatar-menu.open { display: block; }
+    .avatar-menu .user-info { padding: 10px 12px; border-bottom: 1px solid var(--border); margin-bottom: 6px; }
+    .avatar-menu .user-info strong { display: block; font-size: 14px; }
+    .avatar-menu .user-info span { font-size: 12px; color: var(--text-muted); }
+    .avatar-menu a {
+      display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 8px;
+      text-decoration: none; color: var(--text); font-size: 14px; transition: background 0.15s;
+    }
+    .avatar-menu a:hover { background: var(--bg); }
+    .avatar-menu a.danger { color: var(--red); }
+
+    .content { padding: 28px 32px; flex: 1; }
+
+    /* Cards */
+    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px 24px; }
+    .stat-label { font-size: 13px; color: var(--text-muted); font-weight: 500; margin-bottom: 6px; }
+    .stat-value { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; margin-bottom: 4px; }
+    .stat-change { font-size: 13px; font-weight: 500; }
+    .stat-change.up { color: var(--green); }
+    .stat-change.down { color: var(--red); }
+    .stat-change.neutral { color: var(--text-muted); }
+
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; }
+    .card-title { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; margin-bottom: 20px; }
+
+    .chart-row { display: grid; grid-template-columns: 1fr 340px; gap: 16px; margin-bottom: 24px; }
+    .chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    select.year-select {
+      border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px;
+      font-family: 'DM Sans', sans-serif; font-size: 14px; background: var(--surface); cursor: pointer;
+    }
+
+    /* Issue types */
+    .issue-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+    .issue-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+      padding: 18px 20px; display: flex; align-items: center; gap: 16px;
+    }
+    .issue-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+    .issue-info { flex: 1; }
+    .issue-name { font-weight: 600; font-size: 15px; }
+    .issue-count { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
+    .progress-row { display: flex; align-items: center; gap: 10px; }
+    .progress-bar { flex: 1; height: 6px; background: var(--border); border-radius: 99px; overflow: hidden; }
+    .progress-fill { height: 100%; background: var(--green); border-radius: 99px; }
+    .pct { font-weight: 700; font-size: 14px; color: var(--text); white-space: nowrap; }
+
+    /* Table */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; font-size: 12px; font-weight: 600; color: var(--text-muted); padding: 10px 16px; border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.04em; }
+    td { padding: 14px 16px; font-size: 14px; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--bg); }
+
+    .status-badge {
+      display: inline-block; padding: 4px 10px; border-radius: 99px; font-size: 12px; font-weight: 600;
+    }
+    .badge-good { background: #d1fae5; color: #065f46; }
+    .badge-avg  { background: #fef3c7; color: #92400e; }
+    .badge-bad  { background: #fee2e2; color: #991b1b; }
+    .badge-resolved   { background: #d1fae5; color: #065f46; }
+    .badge-pending    { background: #fef3c7; color: #92400e; }
+    .badge-inprogress { background: #dbeafe; color: #1e40af; }
+    .badge-high   { background: #fee2e2; color: #991b1b; }
+    .badge-medium { background: #fef3c7; color: #92400e; }
+    .badge-low    { background: #d1fae5; color: #065f46; }
+
+    /* Alerts */
+    .alert-item {
+      display: flex; gap: 14px; padding: 16px; border-radius: 12px; margin-bottom: 12px;
+      border: 1px solid var(--border); background: var(--surface); transition: opacity 0.3s;
+    }
+    .alert-item.read { opacity: 0.6; }
+    .alert-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+    .dot-danger  { background: var(--red); }
+    .dot-warning { background: var(--orange); }
+    .dot-info    { background: var(--brand); }
+    .dot-success { background: var(--green); }
+    .alert-title { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+    .alert-desc  { font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
+    .alert-time  { font-size: 12px; color: var(--text-muted); }
+    .alert-mark  { margin-left: auto; }
+    .btn-sm {
+      padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg);
+      font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s;
+    }
+    .btn-sm:hover { background: var(--brand); color: #fff; border-color: var(--brand); }
+
+    /* Map filters */
+    .map-filters { display: flex; gap: 20px; margin-bottom: 16px; }
+    .map-filters label { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 500; cursor: pointer; }
+    .map-filters input[type=checkbox] { accent-color: var(--brand); width: 16px; height: 16px; }
+    .map-legend { display: flex; gap: 24px; justify-content: center; margin-top: 12px; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+    .legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+
+    /* Donut legend */
+    .donut-legend { display: flex; gap: 24px; justify-content: center; margin-top: 12px; }
+    .donut-legend span { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+    .dl { width: 12px; height: 12px; border-radius: 3px; }
+
+    @media (max-width: 1100px) {
+      .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .chart-row { grid-template-columns: 1fr; }
+      .issue-grid { grid-template-columns: 1fr; }
+      .topbar { padding: 0 20px; }
+      .content { padding: 24px 20px; }
+      .card { padding: 20px; }
+    }
+
+    @media (max-width: 900px) {
+      .sidebar { position: relative; width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+      .main { margin-left: 0; }
+      .topbar { flex-wrap: wrap; gap: 12px; }
+      .avatar-menu { right: 16px; }
+      .content { padding: 20px 16px; }
+      .stat-card, .card { border-radius: 12px; }
+      .chart-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+    }
+
+    @media (max-width: 700px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; }
+      body { display: block; }
+      .topbar { position: relative; }
+      .chart-row { gap: 12px; }
+    }
+  </style>
+  {% block extra_styles %}{% endblock %}
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">City<span>Problem</span></div>
+  <nav class="nav">
+    <a href="/dashboard" class="{% if page=='dashboard' %}active{% endif %}">
+      <span class="icon">📊</span> Dashboard
+    </a>
+    <a href="/complaints" class="{% if page=='complaints' %}active{% endif %}">
+      <span class="icon">📋</span> Complaints
+    </a>
+    <a href="/analytics" class="{% if page=='analytics' %}active{% endif %}">
+      <span class="icon">📈</span> Analytics
+    </a>
+    <a href="/alerts" class="{% if page=='alerts' %}active{% endif %}">
+      <span class="icon">🔔</span> Alerts
+      {% if alerts_count > 0 %}<span class="badge">{{ alerts_count }}</span>{% endif %}
+    </a>
+  </nav>
+  <div class="sidebar-bottom">
+    <a href="/logout" class="logout-btn">
+      <span>🚪</span> Logout
+    </a>
+  </div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <h1>CityProblem | {% block page_title %}Dashboard{% endblock %}</h1>
+    <div style="position:relative;">
+      <div class="avatar" onclick="toggleMenu()" id="avatarBtn">
+        {% if user.picture %}
+          <img src="{{ user.picture }}" alt="{{ user.name }}"/>
+        {% else %}
+          {{ user.initials }}
+        {% endif %}
+      </div>
+      <div class="avatar-menu" id="avatarMenu">
+        <div class="user-info">
+          <strong>{{ user.name }}</strong>
+          <span>{{ user.email }}</span>
+        </div>
+        <a href="/logout" class="danger">🚪 Logout</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="content">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div style="padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; 
+                      {% if category == 'success' %} background: #d1fae5; color: #065f46; 
+                      {% elif category == 'danger' %} background: #fee2e2; color: #991b1b;
+                      {% else %} background: #fef3c7; color: #92400e; {% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </div>
+</div>
+
+<script>
+function toggleMenu() {
+  document.getElementById('avatarMenu').classList.toggle('open');
+}
+document.addEventListener('click', function(e) {
+  if (!document.getElementById('avatarBtn').contains(e.target)) {
+    document.getElementById('avatarMenu').classList.remove('open');
+  }
+});
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

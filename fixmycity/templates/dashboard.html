@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Department Dashboard{% endblock %}
+
+{% block content %}
+<!-- Stat Cards -->
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="stat-label">Total Issues</div>
+    <div class="stat-value">{{ stats.total_issues }}</div>
+    <div class="stat-change neutral">Current total</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Issues Resolved</div>
+    <div class="stat-value">{{ stats.resolved }}</div>
+    <div class="stat-change neutral">{{ stats.resolved }} resolved</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Average Resolution Time</div>
+    <div class="stat-value">{{ stats.avg_days }} <span style="font-size:18px;font-weight:500;">days</span></div>
+    <div class="stat-change neutral">Average time</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Most Affected Area</div>
+    <div class="stat-value" style="font-size:24px;">{{ stats.most_affected }}</div>
+    <div class="stat-change neutral">{{ stats.active }} active issues</div>
+  </div>
+</div>
+
+<!-- Charts row -->
+<div class="chart-row">
+  <div class="card">
+    <div class="chart-header">
+      <span class="card-title" style="margin-bottom:0;">Monthly Issue Trends</span>
+      <select class="year-select" id="yearSelect" onchange="loadChart(this.value)">
+        <option value="2026">2026</option>
+        <option value="2025">2025</option>
+        <option value="2024">2024</option>
+      </select>
+    </div>
+    <div class="chart-container"><canvas id="barChart"></canvas></div>
+  </div>
+  <div class="card" style="display:flex;flex-direction:column;align-items:center;">
+    <div class="card-title" style="width:100%;">Resolution Status</div>
+    <canvas id="donutChart" width="220" height="220"></canvas>
+    <div class="donut-legend">
+      <span><div class="dl" style="background:#10b981;"></div> Resolved</span>
+      <span><div class="dl" style="background:#ef4444;"></div> Pending</span>
+    </div>
+  </div>
+</div>
+
+<!-- Issue types -->
+<div class="card" style="margin-bottom:24px;">
+  <div class="card-title">Issue Types</div>
+  <div class="issue-grid">
+    {% for issue in stats.issue_types %}
+    <div class="issue-card">
+      <div class="issue-icon" style="background:{{ issue.color }};">{{ issue.icon }}</div>
+      <div class="issue-info">
+        <div class="issue-name">{{ issue.type }}</div>
+        <div class="issue-count">{{ issue.count }} reported issues</div>
+        <div class="progress-row">
+          <div class="progress-bar"><div class="progress-fill" style="width:{{ issue.pct }}%;"></div></div>
+          <span class="pct">{{ issue.pct }}%</span>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Department performance table -->
+<div class="card" style="margin-bottom:24px;">
+  <div class="card-title">Department Performance</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Region</th>
+          <th>Total Complaints</th>
+          <th>Resolved</th>
+          <th>Avg. Resolution Days</th>
+          <th>Performance</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in perf %}
+        <tr>
+          <td><strong>{{ r.region }}</strong></td>
+          <td>{{ r.total }}</td>
+          <td>{{ r.resolved }}</td>
+          <td>{{ r.avg_days }}</td>
+          <td>
+            {% if r.status == 'Good' %}
+              <span class="status-badge badge-good">Good</span>
+            {% elif r.status == 'Average' %}
+              <span class="status-badge badge-avg">Average</span>
+            {% else %}
+              <span class="status-badge badge-bad">Needs Attention</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- City Issues Map -->
+<div class="card">
+  <div class="card-title">City Issues Map</div>
+  <div class="map-filters">
+    <label><input type="checkbox" id="chk-pothole" checked onchange="toggleLayer('pothole')"> Show Potholes</label>
+    <label><input type="checkbox" id="chk-light" checked onchange="toggleLayer('light')"> Show Lights</label>
+    <label><input type="checkbox" id="chk-garbage" checked onchange="toggleLayer('garbage')"> Show Garbage</label>
+    <label><input type="checkbox" id="chk-electric" checked onchange="toggleLayer('electric')"> Show Electricity</label>
+  </div>
+  <div id="map" style="height:380px;border-radius:10px;overflow:hidden;"></div>
+  <div class="map-legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#ef4444;"></div> High Issue Density</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f59e0b;"></div> Medium Issue Density</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#10b981;"></div> Low Issue Density</div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_styles %}
+<style>
+.chart-container { width: 100%; min-height: 340px; height: 340px; }
+#barChart { width: 100% !important; height: 100% !important; display: block; }
+#donutChart { width: 100% !important; max-width: 240px; height: 240px !important; display: block; margin: 0 auto; }
+.chart-row .card { min-height: 420px; }
+@media (max-width: 1100px) {
+  .chart-container { min-height: 320px; height: 320px; }
+}
+@media (max-width: 700px) {
+  .chart-row .card { min-height: auto; }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let barChart, donutChart, map, allMarkers = [];
+
+// Bar chart
+function loadChart(year) {
+  fetch('/api/monthly-data?year=' + year)
+    .then(r => r.json())
+    .then(data => {
+      if (barChart) barChart.destroy();
+      const ctx = document.getElementById('barChart').getContext('2d');
+      barChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+          datasets: [{ data, backgroundColor: '#1a56ff', borderRadius: 6, borderSkipped: false }]
+        },
+        options: {
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true, grid: { color: '#f0f0f0' } }, x: { grid: { display: false } } },
+          responsive: true, maintainAspectRatio: false
+        }
+      });
+    });
+}
+
+// Donut chart
+function initDonut() {
+  const ctx = document.getElementById('donutChart').getContext('2d');
+  donutChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Resolved', 'Pending'],
+      datasets: [{ data: [{{ stats.resolved }}, {{ stats.total_issues - stats.resolved }}], backgroundColor: ['#10b981', '#ef4444'], borderWidth: 0, hoverOffset: 6 }]
+    },
+    options: { plugins: { legend: { display: false } }, cutout: '70%', responsive: false }
+  });
+}
+
+// Map
+function initMap() {
+  map = L.map('map').setView([20.5937, 78.9629], 5);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(map);
+
+  fetch('/api/map-issues')
+    .then(r => r.json())
+    .then(issues => {
+      issues.forEach(issue => {
+        const colors = { high: '#ef4444', medium: '#f59e0b', low: '#10b981' };
+        const color = colors[issue.density] || '#6b7280';
+        const marker = L.circleMarker([issue.lat, issue.lng], {
+          radius: issue.density === 'high' ? 22 : issue.density === 'medium' ? 16 : 10,
+          fillColor: color, fillOpacity: 0.7, color: '#fff', weight: 2
+        }).addTo(map);
+        marker.bindPopup(`<b>${issue.city}</b><br>Type: ${issue.type}<br>Issues: ${issue.count}`);
+        marker._issueType = issue.type;
+        allMarkers.push(marker);
+      });
+    });
+}
+
+function toggleLayer(type) {
+  allMarkers.forEach(m => {
+    if (m._issueType === type) {
+      const chk = document.getElementById('chk-' + type);
+      if (chk.checked) { if (!map.hasLayer(m)) m.addTo(map); }
+      else { map.removeLayer(m); }
+    }
+  });
+}
+
+loadChart('2026');
+initDonut();
+initMap();
+</script>
+{% endblock %}
